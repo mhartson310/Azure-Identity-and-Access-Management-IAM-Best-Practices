@@ -1,0 +1,41 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "policyName": {
+      "type": "string",
+      "defaultValue": "RequireMFAForAllUsers",
+      "metadata": {
+        "description": "Name of the conditional access policy."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Authorization/conditionalAccessPolicies",
+      "apiVersion": "2020-01-01-preview",
+      "name": "[parameters('policyName')]",
+      "properties": {
+        "displayName": "[parameters('policyName')]",
+        "state": "enabled",
+        "conditions": {
+          "users": {
+            "includeUsers": [ "All" ],
+            "excludeUsers": []
+          },
+          "platforms": {
+            "includePlatforms": [ "all" ]
+          },
+          "locations": {
+            "includeLocations": [ "All" ],
+            "excludeLocations": []
+          }
+        },
+        "grantControls": {
+          "operator": "OR",
+          "builtInControls": [ "mfa" ]
+        }
+      }
+    }
+  ]
+}
