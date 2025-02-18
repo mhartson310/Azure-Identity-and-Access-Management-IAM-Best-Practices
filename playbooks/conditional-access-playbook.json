@@ -1,0 +1,77 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    }
+  },
+  "triggers": {
+    "When_Access_Anomaly_Detected": {
+      "type": "Request",
+      "kind": "Http",
+      "inputs": {
+        "schema": {}
+      }
+    }
+  },
+  "actions": {
+    "Enforce_Conditional_Access": {
+      "type": "Http",
+      "inputs": {
+        "method": "POST",
+        "uri": "https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Authorization/conditionalAccessPolicies/{policyName}?api-version=2020-01-01-preview",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "properties": {
+            "displayName": "Require MFA for High-Risk Users",
+            "state": "enabled",
+            "conditions": {
+              "users": {
+                "includeUsers": [ "All" ]
+              }
+            },
+            "grantControls": {
+              "operator": "OR",
+              "builtInControls": [ "mfa" ]
+            }
+          }
+        }
+      }
+    },
+    "Send_Alert": {
+      "type": "ApiConnection",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['office365']['connectionId']"
+          }
+        },
+        "method": "post",
+        "path": "/v2/Mail",
+        "body": {
+          "Message": {
+            "Subject": "Conditional Access Policy Enforced",
+            "Body": {
+              "ContentType": "Text",
+              "Content": "A conditional access policy has been automatically enforced due to detected access anomalies."
+            },
+            "ToRecipients": [
+              {
+                "EmailAddress": {
+                  "Address": "security.team@example.com"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "Enforce_Conditional_Access": [ "Succeeded" ]
+      }
+    }
+  }
+}
